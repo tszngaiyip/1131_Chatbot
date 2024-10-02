@@ -1,0 +1,1 @@
+製作Line聊天機器人，判斷一段話是正向、負向還是中性的。使用技術有：Line Messaging API, Python Flask, MS Language Service
