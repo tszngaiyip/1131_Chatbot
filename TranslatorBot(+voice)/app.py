@@ -91,7 +91,7 @@ def callback():
 @handler.add(MessageEvent, message=TextMessageContent)
 def message_text(event):
     audio_duration = azure_speech(event.message.text)
-    translation_result = azure_translate(event.message.text)
+    translation_result, detected_language = azure_translate(event.message.text)
     # print(translation_result)
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
@@ -106,9 +106,14 @@ def message_text(event):
         )
 
 def azure_speech(user_input):
-    translated_text = azure_translate(user_input)
+    translated_text, detected_language  = azure_translate(user_input)
     # The language of the voice that speaks.
-    speech_config.speech_synthesis_voice_name = "zh-CN-XiaoxiaoMultilingualNeural"
+    if detected_language == "ja":
+        speech_config.speech_synthesis_voice_name = "zh-CN-XiaoxiaoNeural"
+        detected_language = "ja"
+    elif detected_language == "zh-Hant" or detected_language == "zh-Hans":
+        speech_config.speech_synthesis_voice_name = "ja-JP-NanamiNeural"
+        detected_language = "zh"
     file_name = "outputaudio.wav"
     file_config = speechsdk.audio.AudioOutputConfig(filename="static/" + file_name)
     speech_synthesizer = speechsdk.SpeechSynthesizer(
@@ -118,15 +123,21 @@ def azure_speech(user_input):
     sentiment = azure_sentiment(user_input)
     feeling = ""
     if sentiment == "positive":
-        feeling = "Excited"
+        if detected_language == "zh":
+            feeling = "cheerful"
+        elif detected_language == "ja":
+            feeling = "Excited"
     elif sentiment == "negative":
-        feeling = "Sorry"
+        if detected_language == "zh":
+            feeling = "customerservice"
+        elif detected_language == "ja":
+            feeling = "whispering"
     else:
-        feeling = "neutral"
+        feeling = "default"
     print(feeling)
     
     ssml_user_input = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">'
-    ssml_user_input += '<voice name="zh-CN-XiaoxiaoMultilingualNeural">'
+    ssml_user_input += '<voice name="' + speech_config.speech_synthesis_voice_name + '">'
     ssml_user_input += '<mstts:express-as type="' + feeling + '" styledegree="2">'
     ssml_user_input += translated_text
     ssml_user_input += '</mstts:express-as>'
@@ -195,9 +206,9 @@ def azure_translate(user_input):
         translations = response[0].translations if response else None 
                 
         if translations:
-            return translations[0].text
+            return translations[0].text, detected_language
         else:
-            return user_input  # 如果沒有翻譯結果，返回原始輸入
+            return user_input, detected_language  # 如果沒有翻譯結果，返回原始輸入
         
     except HttpResponseError as exception:
         print(f"ErrorCode: {exception.error}")
