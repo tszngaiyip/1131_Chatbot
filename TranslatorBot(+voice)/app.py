@@ -106,14 +106,16 @@ def message_text(event):
         )
 
 def azure_speech(user_input):
-    translated_text, detected_language  = azure_translate(user_input)
+    translated_text, translated_language  = azure_translate(user_input)
     # The language of the voice that speaks.
-    if detected_language == "ja":
-        speech_config.speech_synthesis_voice_name = "zh-CN-XiaoxiaoNeural"
-        detected_language = "ja"
-    elif detected_language == "zh-Hant" or detected_language == "zh-Hans":
+    if translated_language == "ja":
         speech_config.speech_synthesis_voice_name = "ja-JP-NanamiNeural"
-        detected_language = "zh"
+        translated_language = "ja"
+        xml_lang = "ja-JP"
+    elif translated_language == "zh-Hant" or translated_language == "zh-Hans":
+        speech_config.speech_synthesis_voice_name = "zh-CN-XiaoxiaoNeural"
+        translated_language = "zh"
+        xml_lang = "zh-CN"
     file_name = "outputaudio.wav"
     file_config = speechsdk.audio.AudioOutputConfig(filename="static/" + file_name)
     speech_synthesizer = speechsdk.SpeechSynthesizer(
@@ -123,20 +125,20 @@ def azure_speech(user_input):
     sentiment = azure_sentiment(user_input)
     feeling = ""
     if sentiment == "positive":
-        if detected_language == "zh":
-            feeling = "cheerful"
-        elif detected_language == "ja":
+        if translated_language == "zh":
             feeling = "Excited"
+        elif translated_language == "ja":
+            feeling = "cheerful"
     elif sentiment == "negative":
-        if detected_language == "zh":
-            feeling = "customerservice"
-        elif detected_language == "ja":
+        if translated_language == "zh":
             feeling = "whispering"
+        elif translated_language == "ja":
+            feeling = "customerservice"
     else:
         feeling = "default"
     print(feeling)
     
-    ssml_user_input = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">'
+    ssml_user_input = '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="'+ xml_lang +'">'
     ssml_user_input += '<voice name="' + speech_config.speech_synthesis_voice_name + '">'
     ssml_user_input += '<mstts:express-as type="' + feeling + '" styledegree="2">'
     ssml_user_input += translated_text
@@ -206,7 +208,7 @@ def azure_translate(user_input):
         translations = response[0].translations if response else None 
                 
         if translations:
-            return translations[0].text, detected_language
+            return translations[0].text, target_languages[0]
         else:
             return user_input, detected_language  # 如果沒有翻譯結果，返回原始輸入
         
