@@ -39,7 +39,7 @@ API_KEY = 你的_Google_Gemini_API_金鑰
 ```
 
 2. 取得 Google Gemini API 金鑰：
-   - 前往 [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - 前往 [Google AI Studio](https://aistudio.google.com/app/apikey)
    - 建立新的 API 金鑰
    - 將金鑰填入 config.ini 檔案
 
